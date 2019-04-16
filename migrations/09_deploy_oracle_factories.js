@@ -1,6 +1,6 @@
 module.exports = function (deployer) {
-    [
-        'CentralizedOracle',
+    [   'CentralizedOracle',
+        'LightHouseOracle',
         'MajorityOracle',
         'SignedMessageOracle',
         'UltimateOracle',

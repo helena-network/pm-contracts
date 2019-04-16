@@ -5,6 +5,11 @@ const { wait } = require('@digix/tempo')(web3)
 const WETH9 = artifacts.require('WETH9')
 const CentralizedOracle = artifacts.require('CentralizedOracle')
 const CentralizedOracleFactory = artifacts.require('CentralizedOracleFactory')
+
+const LightHouse = artifacts.require('LightHouse')
+const LightHouseOracle = artifacts.require('LightHouseOracle')
+const LightHouseOracleFactory = artifacts.require('LightHouseOracleFactory')
+
 const DifficultyOracle = artifacts.require('DifficultyOracle')
 const DifficultyOracleFactory = artifacts.require('DifficultyOracleFactory')
 const MajorityOracle = artifacts.require('MajorityOracle')
@@ -25,6 +30,8 @@ contract('Oracle', function (accounts) {
     let difficultyOracleFactory
     let majorityOracleFactory
     let ultimateOracleFactory
+    let lighthouse
+    let lightHouseOracleFactory
     let futarchyOracleFactory
     let lmsrMarketMaker
     let etherToken
@@ -35,10 +42,12 @@ contract('Oracle', function (accounts) {
 
     beforeEach(async () => {
         // deployed factory contracts
+        lighthouse = await LightHouse.deployed();
         centralizedOracleFactory = await CentralizedOracleFactory.deployed()
         difficultyOracleFactory = await DifficultyOracleFactory.deployed()
         majorityOracleFactory = await MajorityOracleFactory.deployed()
         ultimateOracleFactory = await UltimateOracleFactory.deployed()
+        lightHouseOracleFactory = await LightHouseOracleFactory.deployed()
         futarchyOracleFactory = await FutarchyOracleFactory.deployed()
         lmsrMarketMaker = await LMSRMarketMaker.deployed.call()
         etherToken = await WETH9.deployed()
@@ -200,6 +209,33 @@ contract('Oracle', function (accounts) {
         assert((await etherToken.balanceOf.call(accounts[creator])).gt(funding))
     })
 
+    it('should test lighthouse oracle', async () => {
+        // Create centralized oracle factory
+        const owner1 = 0
+
+        // create centralized oracle
+
+        const lightHouseOracle = utils.getParamFromTxEvent(
+            await lightHouseOracleFactory.createLightHouseOracle(ipfsHash, lighthouse.address, { from: accounts[owner1] }),
+            'lightHouseOracle', LightHouseOracle
+        )
+        const myLightHouse = await lightHouseOracle.myLightHouse.call()
+        const oracleOwner = await lightHouseOracle.owner.call()
+        
+        // Replace account resolving outcome
+        assert.equal(await lightHouseOracle.owner.call(), accounts[owner1])
+
+        // Set outcome
+        assert.equal(await lightHouseOracle.isOutcomeSet.call(), false)
+        const isOutcomeSet = await lightHouseOracle.isOutcomeSet.call()
+        await lighthouse.write(1, 1)
+        await lightHouseOracle.setOutcome({from: accounts[owner1]})
+        const finalOutcome = await lightHouseOracle.getOutcome.call()
+
+        assert.equal(await lightHouseOracle.isOutcomeSet.call(), true)
+        assert.equal(finalOutcome.toNumber(), 1)
+        assert.equal(await lightHouseOracle.ipfsHash.call(), ipfsBytes)
+    })
     it('should test majority oracle', async () => {
         // create Oracles
         const owners = [0, 1, 2]
