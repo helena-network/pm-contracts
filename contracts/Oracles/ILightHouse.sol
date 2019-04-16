@@ -1,4 +1,4 @@
-pragma solidity ^0.5.0;
+pragma solidity ^0.4.24;
 
 // for operation of this contract see the readme file.
 
@@ -16,4 +16,4 @@ interface ILighthouse {
 
     function read() external view returns (bytes32 x);
 
-
+}

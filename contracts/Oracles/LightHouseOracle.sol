@@ -1,34 +1,95 @@
-import "./Ilighthouse.sol";
-import "./Ownable.sol"
+pragma solidity ^0.4.24;
+
+import "./ILighthouse.sol";
+import "./Ownable.sol";
 import "../Oracles/Oracle.sol";
 
 
 
+contract LightHouseOracleData {
 
-contract LightHouseOracle is Oracle, Ownable {
-    
+    /*
+     *  Events
+     */
+    event OwnerReplacement(address indexed newOwner);
     event OutcomeAssignment(int outcome);
 
-    ILighthouse  public myLighthouse;
+    /*
+     *  Storage
+     */
+    ILighthouse  public myLightHouse;
+    address public owner;
+    bytes public ipfsHash;
+    bool public isSet;
+    int public outcome;
+
+    /*
+     *  Modifiers
+     */
+    modifier isOwner () {
+        // Only owner is allowed to proceed
+        require(msg.sender == owner);
+        _;
+    }
+}
+
+
+
+contract LightHouseOracleProxy is Proxy, LightHouseOracleData {
+
+    /// @dev Constructor sets owner address and IPFS hash
+    /// @param _ipfsHash Hash identifying off chain event description
+    constructor(address proxied, address _myLightHouse, address _owner, bytes _ipfsHash)
+        public
+        Proxy(proxied)
+    {
+        // Description hash cannot be null
+        require(_ipfsHash.length == 46);
+        owner = _owner;
+        myLightHouse = ILighthouse(_myLightHouse);
+        ipfsHash = _ipfsHash;
+    }
+}
+
+contract LightHouseOracle is Proxied, Oracle, LightHouseOracleData {
+    
+    event OutcomeAssignment(int outcome);
+    address centralizedOracle;
     bool public isSet;
     int public outcome;
 
 
-    constructor(ILighthouse _myLighthouse) public {
-        myLighthouse = _myLighthouse;
+    constructor(ILighthouse _myLightHouse) public {
+        myLightHouse = _myLightHouse;
+    }
+
+    /*
+     *  Public functions
+     */
+    /// @dev Replaces owner
+    /// @param newOwner New owner
+
+    function replaceOwner(address newOwner)
+        public
+        isOwner
+    {
+        // Result is not set yet
+        require(!isSet);
+        owner = newOwner;
+        emit OwnerReplacement(newOwner);
     }
 
     /// @dev Sets event outcome
     function setOutcome()
         public
-        onlyOwner
+        isOwner
     {
-        // Result is not set yet
-        require(!isSet);
+         // Result is not set yet
+        //require(!isSet);
         
         uint128 data;
         bool ok = false;
-        (data, ok) = myLighthouse.peekData();
+        (data, ok) = myLightHouse.peekData();
         require(ok);
         outcome = data;
         isSet = true;
