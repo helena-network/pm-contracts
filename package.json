@@ -30,7 +30,9 @@
   "dependencies": {
     "@gnosis.pm/util-contracts": "^2.0.0-alpha",
     "canonical-weth": "^1.2.0",
+    "dotenv": "^8.0.0",
     "openzeppelin-solidity": "github:gnosis/openzeppelin-solidity#fix-signed-safemath",
+    "tabookey-gasless": "^0.3.3-a",
     "truffle-hdwallet-provider": "^1.0.4"
   },
   "devDependencies": {
