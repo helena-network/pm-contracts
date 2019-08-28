@@ -4,6 +4,8 @@ import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 import "../Events/Event.sol";
 import "../MarketMakers/MarketMaker.sol";
 
+import "@openzeppelin/contracts-ethereum-package/contracts/GSN/GSNRecipient.sol";
+import "@openzeppelin/upgrades/contracts/Initializable.sol";
 
 contract StandardMarketData {
     /*
@@ -31,15 +33,44 @@ contract StandardMarketProxy is Proxy, MarketData, StandardMarketData {
 
 /// @title Standard market contract - Backed implementation of standard markets
 /// @author Stefan George - <stefan@gnosis.pm>
-contract StandardMarket is Proxied, Market, StandardMarketData {
+contract StandardMarket is Proxied, Market, StandardMarketData, Initializable, GSNRecipient {
     using SafeMath for *;
+
+    function initialize(uint num) public initializer {
+        GSNRecipient.initialize();
+    }
+
+    function setRelayHubAddress() public {
+        if(getHubAddr() == address(0)) {
+        _upgradeRelayHub(0xD216153c06E857cD7f72665E0aF1d7D82172F494);
+        }
+    }
+
+    function getRecipientBalance() public view returns (uint) {
+        return IRelayHub(getHubAddr()).balanceOf(address(this));
+    }
+
+    // accept all requests
+    function acceptRelayedCall(
+        address,
+        address,
+        bytes calldata,
+        uint256,
+        uint256,
+        uint256,
+        uint256,
+        bytes calldata,
+        uint256
+        ) external view returns (uint256, bytes memory) {
+        return _approveRelayedCall();
+    }
 
     /*
      *  Modifiers
      */
     modifier isCreator() {
         // Only creator is allowed to proceed
-        require(msg.sender == creator);
+        require(_msgSender() == creator);
         _;
     }
 
@@ -60,7 +91,7 @@ contract StandardMarket is Proxied, Market, StandardMarketData {
         atStage(Stages.MarketCreated)
     {
         // Request collateral tokens and allow event contract to transfer them to buy all outcomes
-        require(   eventContract.collateralToken().transferFrom(msg.sender, this, _funding)
+        require(   eventContract.collateralToken().transferFrom(_msgSender(), this, _funding)
                 && eventContract.collateralToken().approve(eventContract, _funding));
         eventContract.buyAllOutcomes(_funding);
         funding = _funding;
@@ -112,7 +143,7 @@ contract StandardMarket is Proxied, Market, StandardMarketData {
         (int netCost, int outcomeTokenNetCost, uint fees) = tradeImpl(outcomeCount, outcomeTokenAmounts, int(maxCost));
         require(netCost >= 0 && outcomeTokenNetCost >= 0);
         cost = uint(netCost);
-        emit OutcomeTokenPurchase(msg.sender, outcomeTokenIndex, outcomeTokenCount, uint(outcomeTokenNetCost), fees);
+        emit OutcomeTokenPurchase(_msgSender(), outcomeTokenIndex, outcomeTokenCount, uint(outcomeTokenNetCost), fees);
     }
 
     /// @dev Allows to sell outcome tokens to market maker
@@ -133,7 +164,7 @@ contract StandardMarket is Proxied, Market, StandardMarketData {
         (int netCost, int outcomeTokenNetCost, uint fees) = tradeImpl(outcomeCount, outcomeTokenAmounts, -int(minProfit));
         require(netCost <= 0 && outcomeTokenNetCost <= 0);
         profit = uint(-netCost);
-        emit OutcomeTokenSale(msg.sender, outcomeTokenIndex, outcomeTokenCount, uint(-outcomeTokenNetCost), fees);
+        emit OutcomeTokenSale(_msgSender(), outcomeTokenIndex, outcomeTokenCount, uint(-outcomeTokenNetCost), fees);
     }
 
     /// @dev Buys all outcomes, then sells all shares of selected outcome which were bought, keeping
@@ -147,7 +178,7 @@ contract StandardMarket is Proxied, Market, StandardMarketData {
         returns (uint cost)
     {
         // Buy all outcomes
-        require(   eventContract.collateralToken().transferFrom(msg.sender, this, outcomeTokenCount)
+        require(   eventContract.collateralToken().transferFrom(_msgSender(), this, outcomeTokenCount)
                 && eventContract.collateralToken().approve(eventContract, outcomeTokenCount));
         eventContract.buyAllOutcomes(outcomeTokenCount);
         // Short sell selected outcome
@@ -158,10 +189,10 @@ contract StandardMarket is Proxied, Market, StandardMarketData {
         uint8 outcomeCount = eventContract.getOutcomeCount();
         for (uint8 i = 0; i < outcomeCount; i++)
             if (i != outcomeTokenIndex)
-                require(eventContract.outcomeTokens(i).transfer(msg.sender, outcomeTokenCount));
+                require(eventContract.outcomeTokens(i).transfer(_msgSender(), outcomeTokenCount));
         // Send change back to buyer
-        require(eventContract.collateralToken().transfer(msg.sender, profit));
-        emit OutcomeTokenShortSale(msg.sender, outcomeTokenIndex, outcomeTokenCount, cost);
+        require(eventContract.collateralToken().transfer(_msgSender(), profit));
+        emit OutcomeTokenShortSale(_msgSender(), outcomeTokenIndex, outcomeTokenCount, cost);
     }
 
     /// @dev Allows to trade outcome tokens and collateral with the market maker
@@ -180,7 +211,7 @@ contract StandardMarket is Proxied, Market, StandardMarketData {
         uint fees;
         (netCost, outcomeTokenNetCost, fees) = tradeImpl(outcomeCount, outcomeTokenAmounts, collateralLimit);
 
-        emit OutcomeTokenTrade(msg.sender, outcomeTokenAmounts, outcomeTokenNetCost, fees);
+        emit OutcomeTokenTrade(_msgSender(), outcomeTokenAmounts, outcomeTokenNetCost, fees);
     }
 
     function tradeImpl(uint8 outcomeCount, int[] outcomeTokenAmounts, int collateralLimit)
@@ -204,7 +235,7 @@ contract StandardMarket is Proxied, Market, StandardMarketData {
 
         if(outcomeTokenNetCost > 0) {
             require(
-                eventContract.collateralToken().transferFrom(msg.sender, this, uint(netCost)) &&
+                eventContract.collateralToken().transferFrom(_msgSender(), this, uint(netCost)) &&
                 eventContract.collateralToken().approve(eventContract, uint(outcomeTokenNetCost))
             );
 
@@ -214,9 +245,9 @@ contract StandardMarket is Proxied, Market, StandardMarketData {
         for (uint8 i = 0; i < outcomeCount; i++) {
             if(outcomeTokenAmounts[i] != 0) {
                 if(outcomeTokenAmounts[i] < 0) {
-                    require(eventContract.outcomeTokens(i).transferFrom(msg.sender, this, uint(-outcomeTokenAmounts[i])));
+                    require(eventContract.outcomeTokens(i).transferFrom(_msgSender(), this, uint(-outcomeTokenAmounts[i])));
                 } else {
-                    require(eventContract.outcomeTokens(i).transfer(msg.sender, uint(outcomeTokenAmounts[i])));
+                    require(eventContract.outcomeTokens(i).transfer(_msgSender(), uint(outcomeTokenAmounts[i])));
                 }
 
                 netOutcomeTokensSold[i] = netOutcomeTokensSold[i].add(outcomeTokenAmounts[i]);
@@ -229,7 +260,7 @@ contract StandardMarket is Proxied, Market, StandardMarketData {
             // uint(-int(-0x8000000000000000000000000000000000000000000000000000000000000000))
             eventContract.sellAllOutcomes(uint(-outcomeTokenNetCost));
             if(netCost < 0) {
-                require(eventContract.collateralToken().transfer(msg.sender, uint(-netCost)));
+                require(eventContract.collateralToken().transfer(_msgSender(), uint(-netCost)));
             }
         }
     }
