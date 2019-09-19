@@ -1,4 +1,5 @@
 const HDWalletProvider = require('truffle-hdwallet-provider')
+require('dotenv').config()
 const mnemonic =process.env["MNEMONIC"];
 
 const config = {
@@ -32,8 +33,9 @@ const config = {
             network_id: "42",
         },
         rinkeby: {
-            host: "localhost",
-            port: 8545,
+            provider: function () {
+                return new HDWalletProvider(mnemonic, 'https://rinkeby.infura.io/v3/f837a713a0d244b5a67c5b2da01e03d9')
+              },
             network_id: "4",
         },
         quickstart: {
