@@ -1,16 +1,31 @@
 {
-    "Event": ["CategoricalEvent", "ScalarEvent"],
-    "StandardMarket": ["StandardMarketWithPriceLogger"],
-    "Market": ["StandardMarket"],
-    "MarketMaker": ["LMSRMarketMaker"],
-    "Oracle": [
-        "CentralizedOracle",
-        "DifficultyOracle",
-        "FutarchyOracle",
-        "MajorityOracle",
-        "SignedMessageOracle",
-        "UltimateOracle"
-      ],
-    "StandardToken": ["WETH9", "OutcomeToken"],
-    "ERC20": ["StandardToken"]
+  "Event": [
+    "CategoricalEvent",
+    "ScalarEvent"
+  ],
+  "StandardMarket": [
+    "StandardMarketWithPriceLogger"
+  ],
+  "Market": [
+    "StandardMarket"
+  ],
+  "MarketMaker": [
+    "LMSRMarketMaker"
+  ],
+  "Oracle": [
+    "CentralizedOracle",
+    "LighthouseOracle",
+    "DifficultyOracle",
+    "FutarchyOracle",
+    "MajorityOracle",
+    "SignedMessageOracle",
+    "UltimateOracle"
+  ],
+  "StandardToken": [
+    "WETH9",
+    "OutcomeToken"
+  ],
+  "ERC20": [
+    "StandardToken"
+  ]
 }

@@ -1,6 +1,6 @@
 {
-  "name": "@frontier-token-research/pm-contracts",
-  "version": "1.2.2",
+  "name": "@helena-pm/pm-contracts",
+  "version": "1.2.4",
   "description": "Collection of smart contracts for the Gnosis prediction market platform",
   "scripts": {
     "lint": "eslint .",
@@ -28,7 +28,7 @@
   "author": "Gnosis (https://gnosis.pm)",
   "license": "LGPL-3.0",
   "dependencies": {
-    "@gnosis.pm/util-contracts": "^2.0.0-alpha",
+    "@gnosis.pm/util-contracts": "2.0.0-alpha",
     "canonical-weth": "^1.2.0",
     "dotenv": "^8.1.0",
     "openzeppelin-solidity": "github:gnosis/openzeppelin-solidity#fix-signed-safemath",

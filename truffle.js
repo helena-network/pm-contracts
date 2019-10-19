@@ -4,12 +4,10 @@ const mnemonic =process.env["MNEMONIC"];
 
 const config = {
     networks: {
-        coverage: {
-            host: "localhost",
+        dev: {
+            host: "127.0.0.1",
             network_id: "*",
-            port: 8555,
-            gas: 0xfffffffffff,
-            gasPrice: 0x01,
+            port: 8545
         },
         mainnet: {
             host: "localhost",

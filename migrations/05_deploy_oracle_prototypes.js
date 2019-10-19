@@ -5,6 +5,7 @@ module.exports = function (deployer) {
         'MajorityOracle',
         'SignedMessageOracle',
         'UltimateOracle',
+        'LighthouseOracle'
     ]) {
         deployer.deploy(artifacts.require(contractName))
     }

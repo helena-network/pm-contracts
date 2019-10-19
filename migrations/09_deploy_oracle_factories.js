@@ -4,6 +4,7 @@ module.exports = function (deployer) {
         'MajorityOracle',
         'SignedMessageOracle',
         'UltimateOracle',
+        'LighthouseOracle'
     ].forEach(contractName => {
         const contract = artifacts.require(contractName)
         const factory = artifacts.require(contractName + 'Factory')
